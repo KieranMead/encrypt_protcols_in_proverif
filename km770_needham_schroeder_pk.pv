@@ -1,0 +1,139 @@
+(* 'skey' is the type of secret keys *)
+type skey.
+
+(* 'pkey' is the type of public keys *)
+type pkey.
+
+(* 'sharedKey' is the type of the shared secret key *)
+type sharedKey.
+
+(* 'pk' is a constructor that takes a secret key, and returns a public key. *)
+fun pk(skey) : pkey.
+
+(* 'aenc' is a constructor that takes a bitstring, a _public key_, and returns a bitstring. It is used to model asymmetric encryption. *)
+fun aenc(bitstring, pkey) : bitstring.
+
+(* 'adec' represents asymmetric decryption. It only allows to decrypt a message 'm' with secret key 'k', if it was encrypted using the public key associated with 'k'. *)
+reduc forall m : bitstring, k : skey; adec(aenc(m, pk(k)), k) = m.
+
+(* 'sharedKeymaker' is a constructor that takes a bitstring, Na, Nb, and returns a shared secret key. *)
+fun sharedKeymaker(bitstring, bitstring, bitstring) : sharedKey.
+
+(* 'pack' is a constructor that is used to put together two bitstrings and encrypt them/send them through channels. *)
+fun pack(bitstring, bitstring) : bitstring.
+
+(* 'unpack' is the destructor for 'pack'. It gets a tuple out of a "packed" bitstring. *)
+reduc forall x : bitstring, y : bitstring; unpack(pack(x, y)) = (x, y).
+
+(* Process identifiers *)
+free Alice : bitstring.
+free Bob : bitstring.
+
+(* Alice's secret keys *)
+free AliceSecretKey : skey [private].
+free BobSecretKey : skey [private].
+
+free c : channel.
+
+(* Separate channel used to make the public keys available to the attacker. *)
+free c2 : channel.
+
+(* 'Secretshare' is a private bitstring for the shared secret *)
+free Secretshare : bitstring.
+
+let procA() =
+  new Na : bitstring;
+  in(c2, pkB : pkey);  (* Alice receives Bob's public key *)
+  let message1 = pack(Na, Alice) in
+  out(c, aenc(message1, pkB));
+  in(c, message2 : bitstring);
+  let (Na2:bitstring, Na3:bitstring) = unpack(adec(message2, AliceSecretKey)) in
+  if Na = Na2 then
+    out(c, aenc(Na3, pkB)).
+
+let procB(pkA : pkey) =
+  new Nb : bitstring;
+  out(c2, pkA);  (* Bob sends his public key to Alice through c2 *)
+  in(c, message1 : bitstring);
+  let (Na:bitstring, Alice:bitstring) = unpack(adec(message1, BobSecretKey)) in
+  out(c, aenc(pack(Na, Nb), pkA));
+  in(c, Nb2 : bitstring).
+
+
+query attacker(new Na).
+query attacker(Secretshare).
+
+
+process
+  let pkA = pk(AliceSecretKey) in
+  let pkB = pk(BobSecretKey) in
+  (procA() | procB(pkA))
+
+(*******************************)
+
+(* > My explanation in summary the protocol is breached in security because When bob and Alice are communicating Bob sends pkA to Alice and this is done through a seperate channel c2 And Alice will recieve it 
+but this could be an example of someone imitating Bob by obtaining his key through a c2 and listening in on the  channel using eavesdropping. And potentially being able to comminicate posing as Bob which Alice would
+believe as the key could be the same.*)
+
+
+(*Task2 Trace*)
+
+(* > the below comment is the first line of the trace and the Nonce for bob Nb has been created*)
+(*  new Nb: bitstring creating Nb_1 at {11} *)
+
+(* > The below comment is the 2nd line of the trace and this is the sending of Alice Key through the 2nd channel  *)
+(* out(c2, ~M) with ~M = pk(AliceSecretKey) at {12}*)
+
+(* > The below code is 3rd line of the trace to create the Nonce Na which is the nonce for Alice*)
+(*  new Na: bitstring creating Na_2 at {3}*)
+
+(* > the below code is the code required for the recieveing of the key so alice recieves the key in channel 2 which bob sent*)
+(*  in(c2, pk(a)) at {4} *)
+
+(* > The below code is the final line of the trace and it is sending a message in channel c and is encrypted with aenc function and the public key then packed together*)
+(*  out(c, ~M_1) with ~M_1 = aenc(pack(Na_2,Alice),pk(a)) at {6}*)
+
+(*task 2 Derivation)
+1. The attacker has some term K.
+attacker (k)
+
+2. By 1 the attacker may know k. Using the function pk the attacker may obtain pk(k)
+attacker(pk(k)).
+
+3. The message pk(k) that the attacker may have by 2 may be received at input {4}. So the message aenc(pack(Na[],Alice[]),pk(k)) may be sent to the attacker at output {6}.
+attacker(aenc(pack(Na[],Alice[]),pk(k))).
+
+4. By 3, the attacker may know aenc(pack(Na[],Alice[]),pk(k)).
+By 1, the attacker may know k.
+Using the function adec the attacker may obtain pack(Na[],Alice[]).
+attacker(pack(Na[],Alice[])).
+
+
+5. By 4, the attacker may know pack(Na[],Alice[]).
+Using the function unpack the attacker may obtain (Na[],Alice[]).
+attacker((Na[],Alice[])).
+
+6. By 5, the attacker may know (Na[],Alice[]).
+Using the function 1-proj-2-tuple the attacker may obtain Na[].
+attacker(Na[]).
+
+7. By 6, attacker(Na[]).
+The goal is reached, represented in the following fact:
+attacker(Na[]).*)
+
+(*******************************)
+
+
+
+(*******************************)
+
+(*task3 trace*)
+
+(* > below code is the first line of the trace whcih creates the bitstring Nb_1*)
+(*new Nb: bitstring creating Nb_1 at {11}*)
+
+(* > below code is second  line of the trace whcih creates the bitstring Nb_1*)
+(* > out(c2, ~M) with ~M = pk(AliceSecretKey) at {12}*)
+
+(* > below code is third  line of the trace whcih creates the bitstring Nb_1*)
+(* new Na: bitstring creating Na_2 at {3}*)
