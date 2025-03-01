@@ -1,0 +1,46 @@
+free c : channel.
+
+type pkey.
+type key.
+
+(* pk(k) models the idea of exponentiating some known 'g', 'g^k' *)
+fun pk(key): pkey.
+
+(* exp(x, k) models the idea of exponentiating a value 'x^k' *)
+fun exp(pkey, key) : pkey.
+
+(** This equation captures the idea that (g^a)^b = (g^b)^a, assuming that
+* pk(k1) = g^k1, and pk(k2) = g^k2
+*)
+equation forall k1 : key, k2 : key; exp(pk(k1), k2) = exp(pk(k2), k1).
+
+fun senc(bitstring, key) : bitstring.
+reduc forall m : bitstring, k : key; sdec(senc(m, k), k) = m.
+
+free secretVal : bitstring [ private ].
+
+let procA =
+  new skA : key;
+  (* A's part in the DH protocol *)
+  0
+  .
+
+let procB =
+  new skB : key;
+  (* B's part in the DH protocol *)
+  0
+  .
+
+query attacker(exp(pk(new skA), new skB)).
+query attacker(secretVal).
+
+(*
+ * Task 1: Fill in [procA] and [procB] for the following protocol:
+ *    A -> B : g^a;
+ *    B -> A : g^b
+ *
+ * Use the key g^(a*b) to exchange a secret. Show that the protocol is
+ * insecure.
+ *)
+process
+  (procA | procB)
